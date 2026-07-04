@@ -742,15 +742,23 @@
         let db, auth;
         let appId = "financas-pro-app";
 
-        try {
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                appId = typeof __app_id !== 'undefined' ? __app_id : 'financas-pro-app';
-                const app = initializeApp(JSON.parse(__firebase_config));
-                db = getFirestore(app);
-                auth = getAuth(app);
-                firebaseEnabled = true;
-                console.log("Firebase carregado com sucesso!");
-            }
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "firebase/app";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+        
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+          apiKey: "AIzaSyAzm0_ma2GYjsf8_ysZ4IsWVj-_ZUQuwgs",
+          authDomain: "fluxo-de-caixa-8710d.firebaseapp.com",
+          projectId: "fluxo-de-caixa-8710d",
+          storageBucket: "fluxo-de-caixa-8710d.firebasestorage.app",
+          messagingSenderId: "633637767539",
+          appId: "1:633637767539:web:c41a0cf3f4efafe9fd5d06"
+        };
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
         } catch (e) {
             console.warn("Firebase não disponível no ambiente, executando em modo offline simulado.", e);
         }
