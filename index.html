@@ -16,7 +16,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
+            background-color: #0f172a;
         }
         /* Custom scrollbars for spreadsheet-like view */
         .custom-scrollbar::-webkit-scrollbar {
@@ -38,18 +38,71 @@
         .transition-all-300 {
             transition: all 0.3s ease;
         }
-        
         /* Smooth scrolling inside tables */
         .table-responsive-container {
             -webkit-overflow-scrolling: touch;
         }
     </style>
 </head>
-<body class="text-slate-800 antialiased overflow-x-hidden">
+<body class="text-slate-800 antialiased overflow-x-hidden bg-slate-900">
 
-    <div class="flex h-screen overflow-hidden">
+    <!-- LOGIN AND REGISTER CONTAINER -->
+    <div id="login-container" class="flex items-center justify-center min-h-screen bg-slate-950 px-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl transition-all duration-300">
+            <div class="flex items-center gap-3 justify-center mb-6">
+                <div class="bg-amber-500 text-slate-950 p-3 rounded-2xl font-bold flex items-center justify-center shadow-lg shadow-amber-500/20">
+                    <i class="fa-solid fa-wallet text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-xl leading-none text-white">Finanças Pro</h1>
+                    <span class="text-xs text-slate-400 font-medium">Controle & Planejamento</span>
+                </div>
+            </div>
+
+            <!-- Login tabs -->
+            <div class="flex border-b border-slate-800 mb-6 text-sm">
+                <button id="tab-signin-btn" onclick="toggleAuthTab('signin')" class="flex-1 pb-3 text-amber-500 font-semibold border-b-2 border-amber-500 focus:outline-none">Entrar</button>
+                <button id="tab-signup-btn" onclick="toggleAuthTab('signup')" class="flex-1 pb-3 text-slate-450 font-semibold border-b-2 border-transparent hover:text-white focus:outline-none">Cadastrar</button>
+            </div>
+
+            <!-- Auth Form -->
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-4 text-white">
+                <div>
+                    <label for="auth-email" class="block text-xs font-semibold text-slate-450 mb-1.5">Endereço de E-mail</label>
+                    <input type="email" id="auth-email" required placeholder="exemplo@email.com" class="w-full bg-slate-950 text-white text-sm p-3 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 transition-colors">
+                </div>
+                <div>
+                    <label for="auth-password" class="block text-xs font-semibold text-slate-450 mb-1.5">Senha de Acesso</label>
+                    <input type="password" id="auth-password" required placeholder="Sua senha secreta" class="w-full bg-slate-950 text-white text-sm p-3 rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500/25 focus:border-amber-500 transition-colors">
+                </div>
+
+                <!-- Error message box -->
+                <div id="auth-error-box" class="bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs p-3 rounded-xl hidden">
+                    Ocorreu um erro ao processar. Verifique os dados.
+                </div>
+
+                <button type="submit" id="auth-submit-btn" class="w-full py-3.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-sm font-bold rounded-xl shadow-lg shadow-amber-500/10 transition-all-300 flex items-center justify-center gap-2">
+                    <span>Entrar no Sistema</span>
+                </button>
+            </form>
+
+            <div class="relative flex py-4 items-center">
+                <div class="flex-grow border-t border-slate-800"></div>
+                <span class="flex-shrink mx-4 text-xs text-slate-500 font-medium">Ou experimente sem conta</span>
+                <div class="flex-grow border-t border-slate-800"></div>
+            </div>
+
+            <button onclick="handleGuestLogin()" class="w-full py-3 bg-slate-800/50 hover:bg-slate-800 border border-slate-700/60 text-slate-200 text-sm font-semibold rounded-xl transition-all-300 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-user-secret"></i>
+                <span>Acessar como Convidado</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- APP CONTAINER (HIDDEN UNTIL AUTHENTICATED) -->
+    <div id="app-container" class="flex h-screen overflow-hidden hidden">
         <!-- Sidebar para desktop -->
-        <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between shrink-0 hidden lg:flex">
+        <aside class="w-64 bg-slate-900 text-white flex flex-col justify-between shrink-0 hidden lg:flex border-r border-slate-800">
             <div>
                 <!-- Logo/Header -->
                 <div class="p-6 border-b border-slate-800 flex items-center gap-3">
@@ -83,24 +136,30 @@
                 </nav>
             </div>
             
-            <!-- Quick Profile info -->
-            <div class="p-4 border-t border-slate-800">
-                <div class="flex items-center gap-3 bg-slate-800/40 p-3 rounded-xl">
-                    <div class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center">
-                        FC
-                    </div>
-                    <div>
-                        <p class="text-xs font-bold text-white leading-none">Minha Carteira</p>
-                        <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Premium Plan</span>
+            <!-- Profile info & Logout -->
+            <div class="p-4 border-t border-slate-800 space-y-3">
+                <div class="flex items-center justify-between bg-slate-800/40 p-3 rounded-xl">
+                    <div class="flex items-center gap-3">
+                        <div id="user-avatar-badge" class="w-10 h-10 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center uppercase">
+                            CV
+                        </div>
+                        <div class="min-w-0">
+                            <p id="user-name-display" class="text-xs font-bold text-white leading-none truncate">Convidado</p>
+                            <span class="text-[10px] text-amber-400 font-semibold uppercase tracking-wider">Conta Ativa</span>
+                        </div>
                     </div>
                 </div>
+                <button onclick="handleLogout()" class="w-full py-2 bg-slate-950 hover:bg-rose-950/40 hover:text-rose-400 text-slate-400 border border-slate-800 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all-300">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Sair do Painel</span>
+                </button>
             </div>
         </aside>
 
         <!-- Main Content Area -->
         <main class="flex-1 flex flex-col min-w-0 overflow-y-auto bg-[#fafbfc]">
             <!-- Top Mobile bar & Global Header -->
-            <header class="bg-white border-b border-slate-100 py-4 px-4 sm:px-6 flex justify-between items-center shrink-0 sticky top-0 z-30">
+            <header class="bg-white border-b border-slate-100 py-4 px-4 sm:px-6 flex justify-between items-center shrink-0 sticky top-0 z-30 shadow-xs">
                 <div class="flex items-center gap-3">
                     <!-- Mobile Menu Button -->
                     <button onclick="toggleMobileMenu()" class="lg:hidden text-slate-600 hover:text-slate-900 text-xl p-1 focus:outline-none">
@@ -113,7 +172,11 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <!-- Date Selector Shortcuts / Status info -->
+                    <!-- Sync Indicator & Reference shortcut -->
+                    <span id="sync-status-indicator" class="text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-500 flex items-center gap-1">
+                        <i class="fa-solid fa-cloud-check text-emerald-500"></i>
+                        <span id="sync-status-text">Sincronizado</span>
+                    </span>
                     <span class="bg-amber-50 text-amber-700 text-xs font-semibold px-2.5 py-1.5 rounded-full border border-amber-200/50 hidden md:inline-block">
                         <i class="fa-solid fa-calendar-check mr-1.5"></i>Ano de Referência: 2026
                     </span>
@@ -123,6 +186,7 @@
                 </div>
             </header>
 
+            <!-- Mobile menu sidebar drawer -->
             <div id="mobile-menu" class="fixed inset-0 bg-slate-950/60 z-50 hidden transition-opacity duration-300 opacity-0">
                 <div class="w-64 bg-slate-900 h-full p-4 flex flex-col justify-between shadow-2xl">
                     <div>
@@ -150,6 +214,11 @@
                                 <span>Lançamentos</span>
                             </button>
                         </nav>
+                    </div>
+                    <div class="pt-4 border-t border-slate-850">
+                        <button onclick="handleLogout()" class="w-full py-2 bg-slate-950 text-slate-400 hover:text-rose-450 text-xs font-bold rounded-xl transition-all-300">
+                            <i class="fa-solid fa-right-from-bracket mr-1.5"></i> Sair do Painel
+                        </button>
                     </div>
                 </div>
             </div>
@@ -241,7 +310,7 @@
                     <div class="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-800 text-white p-5 sm:p-6 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
                         <div class="space-y-1">
                             <span class="bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase px-2.5 py-1 rounded-full">Metas do Ano</span>
-                            <h4 class="text-base sm:text-lg font-bold">Investir 15% de toda a receita em Reserva & Educação</h4>
+                            <h4 class="text-base sm:text-lg font-bold">Investir de forma consistente em Reserva & Educação</h4>
                             <p class="text-xs sm:text-sm text-slate-300">Compare seus objetivos na aba de Planejamento com o que foi executado no Fluxo.</p>
                         </div>
                         <div class="shrink-0 flex items-center gap-4 bg-slate-800/80 p-4 rounded-xl border border-slate-700/50">
@@ -249,18 +318,11 @@
                                 <div class="text-[10px] text-slate-400 uppercase tracking-wider">Aderência ao Orçado</div>
                                 <div id="budget-adherence" class="text-lg font-bold text-amber-400">92.4% Alinhado</div>
                             </div>
-                            <div class="w-12 h-12 relative flex items-center justify-center">
-                                <svg class="w-full h-full transform -rotate-90">
-                                    <circle cx="24" cy="24" r="20" stroke="#334155" stroke-width="4" fill="transparent" />
-                                    <circle cx="24" cy="24" r="20" stroke="#f59e0b" stroke-width="4" fill="transparent" stroke-dasharray="125" stroke-dashoffset="10" />
-                                </svg>
-                                <span class="absolute text-[10px] font-bold">92%</span>
-                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 2: FLUXO DE CAIXA (REALIZADO - ESTILO DA IMAGEM) -->
+                <!-- TAB 2: FLUXO DE CAIXA (REALIZADO - ESTILO DA IMAGEM DE REFERÊNCIA) -->
                 <div id="tab-fluxo" class="tab-content hidden space-y-6">
                     <!-- Planejamento e Controle Header Controls -->
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
@@ -284,12 +346,12 @@
                                         <option value="2026-12">dezembro de 2026</option>
                                     </select>
                                 </div>
-                                <button onclick="resetData()" class="p-2 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all-300" title="Restaurar dados padrão de image_af7aee.jpg">
+                                <button onclick="resetData()" class="p-2 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all-300" title="Restaurar dados padrão da imagem de referência">
                                     <i class="fa-solid fa-rotate"></i>
                                 </button>
                             </div>
 
-                            <!-- Right Controls: Accumulative Summary precisely matching image_af7aee.jpg layout -->
+                            <!-- Right Controls: Accumulative Summary matching image_af7aee.jpg layout -->
                             <div class="bg-slate-100 p-3 rounded-2xl border border-slate-200 flex flex-col sm:flex-row gap-2 sm:gap-4 justify-end min-w-[280px] lg:min-w-[500px]">
                                 <div class="flex flex-row sm:flex-col justify-between sm:justify-center sm:w-1/3">
                                     <span class="text-[11px] font-bold text-slate-600 block sm:mb-2 px-1">Saldo Acumulado (R$)</span>
@@ -338,13 +400,13 @@
                             </table>
                         </div>
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-400 pt-1">
-                            <span class="flex items-center gap-1"><i class="fa-solid fa-circle-info text-amber-500"></i> Dê duplo clique em qualquer valor mensal para editá-lo. Arraste horizontalmente no celular.</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-circle-info text-amber-500"></i> Dê duplo clique em qualquer valor mensal ou planejado para alterá-lo. Arraste horizontalmente no celular.</span>
                             <span>Valores em Reais (R$)</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- TAB 3: PLANEJAMENTO MENSAL (ORÇAMENTO INDEPENDENTE MÊS A MÊS - CARA DO FLUXO) -->
+                <!-- TAB 3: PLANEJAMENTO MENSAL (ORÇAMENTO DETALHADO MÊS A MÊS - MESMA CARA DO FLUXO) -->
                 <div id="tab-planejamento" class="tab-content hidden space-y-6">
                     <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-100 shadow-sm space-y-6">
                         
@@ -563,8 +625,13 @@
         <span id="alert-message">Mensagem</span>
     </div>
 
-    <script>
-        // Global State & Mock Data mimicking precisely image_af7aee.jpg and logical budget
+    <!-- Firebase core logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global state template variables
         let categories = [
             // RECEITAS (Group)
             { id: "inc-total", name: "Receitas Totais", type: "receita", isGroup: true, parentId: null, collapsed: false },
@@ -592,8 +659,8 @@
             { id: "pet", name: "Pet", type: "despesa", isGroup: false, parentId: "sub-gastos" }
         ];
 
-        // Monthly planned target budgets (orçado) - Mapeado mês a mês
-        let budgets = {
+        // Backup default data mimicking precisely image_af7aee.jpg values
+        const backupBudgets = {
             "inc-salario": {
                 "2026-05": 5000.00, "2026-06": 5000.00, "2026-07": 5000.00, "2026-08": 5000.00, "2026-09": 5000.00, "2026-10": 5000.00, "2026-11": 5000.00, "2026-12": 5000.00
             },
@@ -610,16 +677,16 @@
                 "2026-05": 150.00, "2026-06": 150.00, "2026-07": 150.00, "2026-08": 150.00, "2026-09": 150.00, "2026-10": 150.00, "2026-11": 150.00, "2026-12": 150.00
             },
             "filantropia": {
-                "2026-05": 150.00, "2026-06": 150.00, "2026-07": 150.00, "2026-08": 150.00, "2026-09": 150.00, "2026-10": 150.00, "2026-11": 150.00, "2026-12": 150.00
+                "2026-05": 0.00, "2026-06": 0.00, "2026-07": 0.00, "2026-08": 0.00, "2026-09": 0.00, "2026-10": 0.00, "2026-11": 0.00, "2026-12": 0.00
             },
             "investimentos": {
-                "2026-05": 300.00, "2026-06": 300.00, "2026-07": 300.00, "2026-08": 300.00, "2026-09": 300.00, "2026-10": 300.00, "2026-11": 300.00, "2026-12": 300.00
+                "2026-05": 0.00, "2026-06": 0.00, "2026-07": 0.00, "2026-08": 0.00, "2026-09": 0.00, "2026-10": 0.00, "2026-11": 0.00, "2026-12": 0.00
             },
             "emprestimo": {
-                "2026-05": 0.00, "2026-06": 0.00, "2026-07": 0.00, "2026-08": 0.00, "2026-09": 700.00, "2026-10": 700.00, "2026-11": 700.00, "2026-12": 700.00
+                "2026-05": 0.00, "2026-06": 0.00, "2026-07": 0.00, "2026-08": 0.00, "2026-09": 0.00, "2026-10": 0.00, "2026-11": 0.00, "2026-12": 0.00
             },
             "ferias": {
-                "2026-05": 1200.00, "2026-06": 200.00, "2026-07": 200.00, "2026-08": 0.00, "2026-09": 0.00, "2026-10": 0.00, "2026-11": 0.00, "2026-12": 0.00
+                "2026-05": 0.00, "2026-06": 0.00, "2026-07": 0.00, "2026-08": 0.00, "2026-09": 0.00, "2026-10": 0.00, "2026-11": 0.00, "2026-12": 0.00
             },
             "barbearia": {
                 "2026-05": 110.00, "2026-06": 110.00, "2026-07": 110.00, "2026-08": 110.00, "2026-09": 110.00, "2026-10": 110.00, "2026-11": 110.00, "2026-12": 110.00
@@ -629,8 +696,7 @@
             }
         };
 
-        // Realized transactional database mapped by month (Simula os dados da imagem image_af7aee.jpg)
-        let monthlyData = {
+        const backupMonthlyData = {
             "reserva": {
                 "2026-05": 450.00, "2026-06": 450.00, "2026-07": 450.00, "2026-08": 450.00, "2026-09": 450.00, "2026-10": 450.00, "2026-11": 450.00, "2026-12": 450.00
             },
@@ -666,23 +732,41 @@
             }
         };
 
-        // Backup states for restoration
-        const backupMonthlyData = JSON.parse(JSON.stringify(monthlyData));
-        const backupBudgets = JSON.parse(JSON.stringify(budgets));
-
-        // Manual transactions list (User log)
+        // State variables to hold working data
+        let budgets = JSON.parse(JSON.stringify(backupBudgets));
+        let monthlyData = JSON.parse(JSON.stringify(backupMonthlyData));
         let transactions = [];
 
-        // Active charts
+        // Firebase Configuration & Security Guards
+        let firebaseEnabled = false;
+        let db, auth;
+        let appId = "financas-pro-app";
+
+        try {
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'financas-pro-app';
+                const app = initializeApp(JSON.parse(__firebase_config));
+                db = getFirestore(app);
+                auth = getAuth(app);
+                firebaseEnabled = true;
+                console.log("Firebase carregado com sucesso!");
+            }
+        } catch (e) {
+            console.warn("Firebase não disponível no ambiente, executando em modo offline simulado.", e);
+        }
+
+        // Active layout elements
         let evolutionChart = null;
         let categoryChart = null;
-        let activeEditCell = null; // Pointer: { catId, month, type: 'real' | 'budget' }
+        let activeEditCell = null; 
+        let activeAuthTab = 'signin';
 
         const monthNames = {
             "01": "Jan", "02": "Fev", "03": "Mar", "04": "Abr", "05": "Mai", "06": "Jun",
             "07": "Jul", "08": "Ago", "09": "Set", "10": "Out", "11": "Nov", "12": "Dez"
         };
 
+        // UI Helpers
         function formatCurrency(val) {
             if (val === undefined || val === null || isNaN(val)) return "---";
             if (val === 0) return "---";
@@ -702,8 +786,10 @@
             msgEl.textContent = message;
             if (type === "success") {
                 icon.innerHTML = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
-            } else {
+            } else if (type === "warning") {
                 icon.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-amber-500"></i>';
+            } else {
+                icon.innerHTML = '<i class="fa-solid fa-circle-xmark text-rose-500"></i>';
             }
             
             container.classList.remove('hidden');
@@ -719,27 +805,208 @@
             }, 3000);
         }
 
-        function switchTab(tabId) {
-            // Hide all tabs
+        function showSyncStatus(status) {
+            const indicator = document.getElementById('sync-status-indicator');
+            const label = document.getElementById('sync-status-text');
+            if (status === 'saving') {
+                indicator.className = "text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-amber-50 text-amber-700 flex items-center gap-1 border border-amber-200/50";
+                label.innerHTML = `<i class="fa-solid fa-arrows-rotate animate-spin mr-1"></i> Salvando...`;
+            } else if (status === 'synced') {
+                indicator.className = "text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-slate-100 text-slate-500 flex items-center gap-1";
+                label.innerHTML = `<i class="fa-solid fa-cloud-check text-emerald-500 mr-1"></i> Nuvem Sincronizada`;
+            } else {
+                indicator.className = "text-[11px] font-semibold px-2.5 py-1.5 rounded-full bg-rose-50 text-rose-700 flex items-center gap-1 border border-rose-200/50";
+                label.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-500 mr-1"></i> Erro ao sincronizar`;
+            }
+        }
+
+        // Firebase Cloud Data Fetching & Syncing (RULE 1)
+        async function loadUserData(userId) {
+            if (!firebaseEnabled) return;
+            try {
+                showSyncStatus('saving');
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'config', 'state');
+                const docSnap = await getDoc(userDocRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (data.monthlyData) monthlyData = data.monthlyData;
+                    if (data.budgets) budgets = data.budgets;
+                    if (data.transactions) transactions = data.transactions;
+                    showSyncStatus('synced');
+                } else {
+                    // Initialize document in strict subcollection (RULE 1)
+                    await setDoc(userDocRef, {
+                        monthlyData: backupMonthlyData,
+                        budgets: backupBudgets,
+                        transactions: []
+                    });
+                    monthlyData = JSON.parse(JSON.stringify(backupMonthlyData));
+                    budgets = JSON.parse(JSON.stringify(backupBudgets));
+                    transactions = [];
+                    showSyncStatus('synced');
+                }
+            } catch (err) {
+                console.error("Erro ao ler dados em nuvem:", err);
+                showSyncStatus('error');
+            }
+        }
+
+        async function saveUserData() {
+            if (!firebaseEnabled || !auth.currentUser) return;
+            try {
+                showSyncStatus('saving');
+                const userId = auth.currentUser.uid;
+                const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'config', 'state');
+                await setDoc(userDocRef, {
+                    monthlyData: monthlyData,
+                    budgets: budgets,
+                    transactions: transactions
+                });
+                showSyncStatus('synced');
+            } catch (err) {
+                console.error("Erro ao gravar dados em nuvem:", err);
+                showSyncStatus('error');
+            }
+        }
+
+        // Auth UI Handlers
+        window.toggleAuthTab = function(tab) {
+            activeAuthTab = tab;
+            const tabSignin = document.getElementById('tab-signin-btn');
+            const tabSignup = document.getElementById('tab-signup-btn');
+            const submitBtn = document.getElementById('auth-submit-btn');
+
+            if (tab === 'signin') {
+                tabSignin.className = "flex-1 pb-3 text-amber-500 font-semibold border-b-2 border-amber-500 focus:outline-none";
+                tabSignup.className = "flex-1 pb-3 text-slate-450 font-semibold border-b-2 border-transparent hover:text-white focus:outline-none";
+                submitBtn.querySelector('span').textContent = "Entrar no Sistema";
+            } else {
+                tabSignup.className = "flex-1 pb-3 text-amber-500 font-semibold border-b-2 border-amber-500 focus:outline-none";
+                tabSignin.className = "flex-1 pb-3 text-slate-450 font-semibold border-b-2 border-transparent hover:text-white focus:outline-none";
+                submitBtn.querySelector('span').textContent = "Criar Minha Conta";
+            }
+            document.getElementById('auth-error-box').classList.add('hidden');
+        };
+
+        function showLoginLoading(isLoading) {
+            const submitBtn = document.getElementById('auth-submit-btn');
+            if (isLoading) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = `<i class="fa-solid fa-arrows-rotate animate-spin mr-1"></i> Carregando...`;
+            } else {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span>${activeAuthTab === 'signin' ? 'Entrar no Sistema' : 'Criar Minha Conta'}</span>`;
+            }
+        }
+
+        window.handleAuth = async function(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const errBox = document.getElementById('auth-error-box');
+            errBox.classList.add('hidden');
+
+            if (!firebaseEnabled) {
+                showAlert("Nuvem inativa: Acessando modo de demonstração local.", "warning");
+                proceedToApp(null);
+                return;
+            }
+
+            showLoginLoading(true);
+
+            try {
+                if (activeAuthTab === 'signin') {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    await createUserWithEmailAndPassword(auth, email, password);
+                    showAlert("Conta criada com sucesso!");
+                }
+            } catch (err) {
+                console.error("Erro Auth:", err);
+                errBox.classList.remove('hidden');
+                errBox.textContent = getFriendlyAuthError(err.code);
+                showLoginLoading(false);
+            }
+        };
+
+        window.handleGuestLogin = async function() {
+            if (!firebaseEnabled) {
+                proceedToApp(null);
+                return;
+            }
+            showLoginLoading(true);
+            try {
+                // Rule 3 Priority - Sign in anonymously as guest fallback
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.error("Erro Convidado:", err);
+                showAlert("Erro ao entrar como convidado.", "error");
+                showLoginLoading(false);
+            }
+        };
+
+        window.handleLogout = async function() {
+            if (firebaseEnabled) {
+                await signOut(auth);
+            } else {
+                document.getElementById('app-container').classList.add('hidden');
+                document.getElementById('login-container').classList.remove('hidden');
+            }
+            showAlert("Sessão finalizada!");
+        };
+
+        function getFriendlyAuthError(code) {
+            switch(code) {
+                case 'auth/invalid-credential': return 'Credenciais incorretas. Verifique seu e-mail e senha.';
+                case 'auth/email-already-in-use': return 'Este endereço de e-mail já está cadastrado.';
+                case 'auth/weak-password': return 'A senha fornecida é muito fraca (mínimo 6 caracteres).';
+                case 'auth/invalid-email': return 'Formato de e-mail inválido.';
+                default: return 'Ocorreu um erro ao processar seu login. Tente novamente.';
+            }
+        }
+
+        // App Navigation and Post-Auth Initialization
+        async function proceedToApp(user) {
+            const avatar = document.getElementById('user-avatar-badge');
+            const nameDisplay = document.getElementById('user-name-display');
+
+            if (user) {
+                if (user.isAnonymous) {
+                    avatar.textContent = "CV";
+                    avatar.className = "w-10 h-10 rounded-full bg-slate-700 text-slate-100 font-bold flex items-center justify-center";
+                    nameDisplay.textContent = "Visitante";
+                } else {
+                    avatar.textContent = user.email.substring(0, 2).toUpperCase();
+                    avatar.className = "w-10 h-10 rounded-full bg-amber-500 text-slate-950 font-bold flex items-center justify-center";
+                    nameDisplay.textContent = user.email.split('@')[0];
+                }
+                await loadUserData(user.uid);
+            } else {
+                avatar.textContent = "LC";
+                nameDisplay.textContent = "Local Demo";
+            }
+
+            document.getElementById('login-container').classList.add('hidden');
+            document.getElementById('app-container').classList.remove('hidden');
+            updateViews();
+        }
+
+        // Navigation Logic
+        window.switchTab = function(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-            
-            // Unselect navigation items
             document.querySelectorAll('.nav-btn').forEach(el => {
                 el.classList.remove('text-amber-500', 'bg-slate-800');
                 el.classList.add('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
             });
 
-            // Show current active tab
             document.getElementById(`tab-${tabId}`).classList.remove('hidden');
             
-            // Apply selected state style
             const activeNav = document.getElementById(`nav-${tabId}`);
             if (activeNav) {
                 activeNav.classList.remove('text-slate-400', 'hover:text-white', 'hover:bg-slate-800');
                 activeNav.classList.add('text-amber-500', 'bg-slate-800');
             }
 
-            // Headings adaptation
             const titles = {
                 dashboard: "Dashboard de Controle",
                 fluxo: "Controle de Fluxo de Caixa (Realizado)",
@@ -749,50 +1016,41 @@
             document.getElementById('page-title').textContent = titles[tabId] || "Finanças Pro";
 
             updateViews();
-        }
+        };
 
-        function toggleMobileMenu() {
+        window.toggleMobileMenu = function() {
             const menu = document.getElementById('mobile-menu');
             if (menu.classList.contains('hidden')) {
                 menu.classList.remove('hidden');
-                setTimeout(() => {
-                    menu.classList.remove('opacity-0');
-                }, 50);
+                setTimeout(() => menu.classList.remove('opacity-0'), 50);
             } else {
                 menu.classList.add('opacity-0');
-                setTimeout(() => {
-                    menu.classList.add('hidden');
-                }, 300);
+                setTimeout(() => menu.classList.add('hidden'), 300);
             }
-        }
+        };
 
-        function openModal(modalId) {
+        window.openModal = function(modalId) {
             const modal = document.getElementById(modalId);
             const container = modal.querySelector('div');
-            
             modal.classList.remove('hidden');
             setTimeout(() => {
                 modal.classList.remove('opacity-0');
                 if (container) container.classList.remove('translate-y-4');
             }, 50);
-        }
+        };
 
-        function closeModal(modalId) {
+        window.closeModal = function(modalId) {
             const modal = document.getElementById(modalId);
             const container = modal.querySelector('div');
-            
             modal.classList.add('opacity-0');
             if (container) container.classList.add('translate-y-4');
-            setTimeout(() => {
-                modal.classList.add('hidden');
-            }, 300);
-        }
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
 
-        // Get list of months based on range selection
+        // Timeline & Core Table Calculators
         function getSelectedMonthRange() {
             const start = document.getElementById('fluxo-start-month').value;
             const end = document.getElementById('fluxo-end-month').value;
-            
             const [startYear, startMonth] = start.split('-').map(Number);
             const [endYear, endMonth] = end.split('-').map(Number);
             
@@ -803,7 +1061,6 @@
             while (currYear < endYear || (currYear === endYear && currMonth <= endMonth)) {
                 let monthStr = currMonth < 10 ? `0${currMonth}` : `${currMonth}`;
                 range.push(`${currYear}-${monthStr}`);
-                
                 currMonth++;
                 if (currMonth > 12) {
                     currMonth = 1;
@@ -813,68 +1070,52 @@
             return range;
         }
 
-        // Calculates Min, Med, Max of realized values dynamically
         function getHistoricalStats(catId) {
             const dataObj = monthlyData[catId] || {};
             const vals = Object.values(dataObj).filter(v => v !== undefined);
+            if (vals.length === 0) return { min: 0, med: 0, max: 0 };
             
-            if (vals.length === 0) {
-                return { min: 0, med: 0, max: 0 };
-            }
             const min = Math.min(...vals);
             const max = Math.max(...vals);
             const sum = vals.reduce((a, b) => a + b, 0);
             const med = sum / vals.length;
-            
             return { min, med, max };
         }
 
-        // Collapse/expand subcategories
-        function toggleCategory(catId) {
+        window.toggleCategory = function(catId) {
             const index = categories.findIndex(c => c.id === catId);
             if (index !== -1) {
                 categories[index].collapsed = !categories[index].collapsed;
                 renderFluxoTable();
                 renderPlanejamentoTable();
             }
-        }
+        };
 
-        // Sum realized value of any category/group for a specific month
         function getCategorySum(catId, month) {
             const cat = categories.find(c => c.id === catId);
             if (!cat) return 0;
-            
-            if (!cat.isGroup) {
-                return (monthlyData[catId] && monthlyData[catId][month]) || 0;
-            }
+            if (!cat.isGroup) return (monthlyData[catId] && monthlyData[catId][month]) || 0;
             
             let sum = 0;
             categories.forEach(child => {
-                if (child.parentId === catId) {
-                    sum += getCategorySum(child.id, month);
-                }
+                if (child.parentId === catId) sum += getCategorySum(child.id, month);
             });
             return sum;
         }
 
-        // Sum planned budget value of any category/group for a specific month
         function getCategoryBudgetSum(catId, month) {
             const cat = categories.find(c => c.id === catId);
             if (!cat) return 0;
-            
-            if (!cat.isGroup) {
-                return (budgets[catId] && budgets[catId][month]) || 0;
-            }
+            if (!cat.isGroup) return (budgets[catId] && budgets[catId][month]) || 0;
             
             let sum = 0;
             categories.forEach(child => {
-                if (child.parentId === catId) {
-                    sum += getCategoryBudgetSum(child.id, month);
-                }
+                if (child.parentId === catId) sum += getCategoryBudgetSum(child.id, month);
             });
             return sum;
         }
 
+        // Render Flow spreadsheet
         function renderFluxoTable() {
             const months = getSelectedMonthRange();
             const tableBody = document.getElementById('fluxo-table-body');
@@ -901,7 +1142,6 @@
                 subheadersContainer.appendChild(th);
             });
 
-            // Calculate live totals for the superior summaries
             let balancesMensal = {};
             let balancesAcumulado = {};
             let prevAcc = 0;
@@ -911,7 +1151,6 @@
                 const totalOut = getCategorySum("exp-total", m);
                 const mensal = totalIn - totalOut;
                 prevAcc += mensal;
-                
                 balancesMensal[m] = mensal;
                 balancesAcumulado[m] = prevAcc;
             });
@@ -920,10 +1159,8 @@
             months.forEach(m => {
                 const colWrapper = document.createElement('div');
                 colWrapper.className = "flex flex-col text-right min-w-[105px] flex-1 justify-center border-l border-slate-200/50 px-2";
-                
                 const accVal = balancesAcumulado[m];
                 const menVal = balancesMensal[m];
-
                 const accClass = accVal < 0 ? "text-rose-600" : "text-emerald-600";
                 const menClass = menVal < 0 ? "text-rose-600" : "text-emerald-600";
 
@@ -934,7 +1171,6 @@
                 saldosSuperioresContainer.appendChild(colWrapper);
             });
 
-            // Master average target budgets across selected timeline
             let rangeTotalInBudget = 0;
             let rangeTotalOutBudget = 0;
             months.forEach(m => {
@@ -946,10 +1182,8 @@
 
             tableBody.innerHTML = '';
 
-            // Generate category row
             function buildRow(cat, indentLevel = 0) {
                 const tr = document.createElement('tr');
-                
                 let bgClass = "hover:bg-slate-50/70";
                 let textClass = "font-medium text-slate-700";
                 
@@ -966,7 +1200,6 @@
 
                 tr.className = `${bgClass} transition-all-300`;
 
-                // Col 1: Name and Toggle Indicator with Sticky CSS for Mobile responsive swipe
                 const tdName = document.createElement('td');
                 tdName.className = `py-3 px-4 sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.03)] flex items-center gap-2 ${cat.id === 'exp-total' || cat.id === 'inc-total' ? 'bg-inherit' : 'bg-white'}`;
                 tdName.style.paddingLeft = `${indentLevel * 1.5 + 1}rem`;
@@ -984,7 +1217,6 @@
                 `;
                 tr.appendChild(tdName);
 
-                // Col 2: Average Budget target
                 let categoryPlannedTotalRange = 0;
                 months.forEach(m => categoryPlannedTotalRange += getCategoryBudgetSum(cat.id, m));
                 const averageBudgetVal = categoryPlannedTotalRange / months.length;
@@ -994,7 +1226,6 @@
                 tdBudget.textContent = formatCurrency(averageBudgetVal);
                 tr.appendChild(tdBudget);
 
-                // Col 3: Budget Percentage % representation
                 const baseTotalBudget = cat.type === 'receita' ? avgInBudget : avgOutBudget;
                 const percent = baseTotalBudget > 0 ? (averageBudgetVal / baseTotalBudget) : 0;
                 const tdPercent = document.createElement('td');
@@ -1002,7 +1233,6 @@
                 tdPercent.textContent = formatPercent(percent);
                 tr.appendChild(tdPercent);
 
-                // Col 4-6: Last 6 Months stats (Min, Med, Max)
                 const stats = getHistoricalStats(cat.id);
                 
                 const tdMin = document.createElement('td');
@@ -1020,15 +1250,12 @@
                 tdMax.textContent = formatCurrency(stats.max);
                 tr.appendChild(tdMax);
 
-                // Col 7+: Monthly realized columns
                 months.forEach(m => {
                     const cellVal = getCategorySum(cat.id, m);
                     const cellPlanned = getCategoryBudgetSum(cat.id, m);
-                    
                     const tdMonth = document.createElement('td');
                     tdMonth.className = `py-3 px-3 border-l border-slate-100/85 text-right font-medium min-w-[105px] cursor-pointer select-none hover:bg-amber-50/40 ${textClass}`;
                     
-                    // Alert layout if realized despesa exceeds target monthly budget
                     let alertIconStr = '';
                     if (cat.type === 'despesa' && cellPlanned > 0 && cellVal > cellPlanned) {
                         alertIconStr = `<i class="fa-solid fa-triangle-exclamation text-amber-500 mr-1" title="Realizado R$ ${formatCurrency(cellVal)} superou o Planejado de R$ ${formatCurrency(cellPlanned)}"></i>`;
@@ -1070,15 +1297,12 @@
 
                         if (!parentCollapsed) {
                             buildRow(cat, level);
-                            if (cat.isGroup) {
-                                buildHierarchy(cat.id, level + 1);
-                            }
+                            if (cat.isGroup) buildHierarchy(cat.id, level + 1);
                         }
                     }
                 });
             }
 
-            // Start table render
             const topIncome = categories.find(c => c.id === "inc-total");
             buildRow(topIncome, 0);
             buildHierarchy("inc-total", 1);
@@ -1088,6 +1312,7 @@
             buildHierarchy("exp-total", 1);
         }
 
+        // Render planning spreadsheet with identical design
         function renderPlanejamentoTable() {
             const months = getSelectedMonthRange();
             const tableBody = document.getElementById('planejamento-table-body');
@@ -1114,7 +1339,6 @@
                 subheadersContainer.appendChild(th);
             });
 
-            // Calculations for Planned Budgets (Meta superior)
             let balancesMensalBudget = {};
             let balancesAcumuladoBudget = {};
             let prevAccBudget = 0;
@@ -1124,7 +1348,6 @@
                 const totalOutPlanned = getCategoryBudgetSum("exp-total", m);
                 const mensalPlanned = totalInPlanned - totalOutPlanned;
                 prevAccBudget += mensalPlanned;
-                
                 balancesMensalBudget[m] = mensalPlanned;
                 balancesAcumuladoBudget[m] = prevAccBudget;
             });
@@ -1133,10 +1356,8 @@
             months.forEach(m => {
                 const colWrapper = document.createElement('div');
                 colWrapper.className = "flex flex-col text-right min-w-[105px] flex-1 justify-center border-l border-slate-200/50 px-2";
-                
                 const accVal = balancesAcumuladoBudget[m];
                 const menVal = balancesMensalBudget[m];
-
                 const accClass = accVal < 0 ? "text-rose-600" : "text-emerald-600";
                 const menClass = menVal < 0 ? "text-rose-600" : "text-emerald-600";
 
@@ -1147,7 +1368,6 @@
                 saldosSuperioresContainer.appendChild(colWrapper);
             });
 
-            // Calculate total planning weights
             let rangeTotalInBudget = 0;
             let rangeTotalOutBudget = 0;
             months.forEach(m => {
@@ -1161,7 +1381,6 @@
 
             function buildPlannedRow(cat, indentLevel = 0) {
                 const tr = document.createElement('tr');
-                
                 let bgClass = "hover:bg-slate-50/70";
                 let textClass = "font-medium text-slate-700";
                 
@@ -1178,7 +1397,6 @@
 
                 tr.className = `${bgClass} transition-all-300`;
 
-                // Col 1: Category Name (Sticky left)
                 const tdName = document.createElement('td');
                 tdName.className = `py-3 px-4 sticky left-0 z-20 shadow-[2px_0_5px_rgba(0,0,0,0.03)] flex items-center gap-2 ${cat.id === 'exp-total' || cat.id === 'inc-total' ? 'bg-inherit' : 'bg-white'}`;
                 tdName.style.paddingLeft = `${indentLevel * 1.5 + 1}rem`;
@@ -1196,7 +1414,6 @@
                 `;
                 tr.appendChild(tdName);
 
-                // Col 2: Average Budget target in selection
                 let categoryPlannedTotalRange = 0;
                 months.forEach(m => categoryPlannedTotalRange += getCategoryBudgetSum(cat.id, m));
                 const averageBudgetVal = categoryPlannedTotalRange / months.length;
@@ -1206,7 +1423,6 @@
                 tdBudget.textContent = formatCurrency(averageBudgetVal);
                 tr.appendChild(tdBudget);
 
-                // Col 3: Percentage of Group
                 const baseTotalBudget = cat.type === 'receita' ? avgInBudget : avgOutBudget;
                 const percent = baseTotalBudget > 0 ? (averageBudgetVal / baseTotalBudget) : 0;
                 const tdPercent = document.createElement('td');
@@ -1214,14 +1430,13 @@
                 tdPercent.textContent = formatPercent(percent);
                 tr.appendChild(tdPercent);
 
-                // Col 4-6: Empty columns matching the grid alignment beautifully
                 const tdBlank1 = document.createElement('td');
                 tdBlank1.className = "py-3 px-2 text-center text-slate-300 border-l border-slate-100";
                 tdBlank1.textContent = "-";
                 tr.appendChild(tdBlank1);
 
                 const tdBlank2 = document.createElement('td');
-                tdBlank2.className = "py-3 px-2 text-center text-slate-450 font-medium";
+                tdBlank2.className = "py-3 px-2 text-center text-slate-400 font-medium";
                 tdBlank2.textContent = "Plano";
                 tr.appendChild(tdBlank2);
 
@@ -1230,7 +1445,6 @@
                 tdBlank3.textContent = "-";
                 tr.appendChild(tdBlank3);
 
-                // Col 7+: Monthly Planning Targets Editable
                 months.forEach(m => {
                     const budgetVal = getCategoryBudgetSum(cat.id, m);
                     const tdMonth = document.createElement('td');
@@ -1268,15 +1482,12 @@
 
                         if (!parentCollapsed) {
                             buildPlannedRow(cat, level);
-                            if (cat.isGroup) {
-                                buildPlannedHierarchy(cat.id, level + 1);
-                            }
+                            if (cat.isGroup) buildPlannedHierarchy(cat.id, level + 1);
                         }
                     }
                 });
             }
 
-            // Start Render
             const topIncomeBudget = categories.find(c => c.id === "inc-total");
             buildPlannedRow(topIncomeBudget, 0);
             buildPlannedHierarchy("inc-total", 1);
@@ -1286,16 +1497,15 @@
             buildPlannedHierarchy("exp-total", 1);
         }
 
+        // Inline Edit handlers
         function triggerCellEdit(catId, month, type) {
             const cat = categories.find(c => c.id === catId);
             if (!cat) return;
 
             activeEditCell = { catId, month, type };
-            
             const editTitle = document.getElementById('edit-cell-title');
             const editDesc = document.getElementById('edit-cell-desc');
             const editInput = document.getElementById('edit-cell-value');
-
             const [year, mNum] = month.split('-');
             const formattedMonth = `${monthNames[mNum]} de ${year}`;
 
@@ -1313,7 +1523,7 @@
             setTimeout(() => editInput.focus(), 150);
         }
 
-        function saveCellEdit() {
+        window.saveCellEdit = async function() {
             if (!activeEditCell) return;
             const { catId, month, type } = activeEditCell;
             const newVal = parseFloat(document.getElementById('edit-cell-value').value) || 0;
@@ -1321,21 +1531,22 @@
             if (type === 'budget') {
                 if (!budgets[catId]) budgets[catId] = {};
                 budgets[catId][month] = newVal;
-                showAlert("Meta de planejamento mensal atualizada!");
+                showAlert("Meta de planejamento atualizada!");
             } else {
                 if (!monthlyData[catId]) monthlyData[catId] = {};
                 monthlyData[catId][month] = newVal;
-                showAlert("Lançamento real modificado com sucesso!");
+                showAlert("Lançamento real modificado!");
             }
 
             closeModal('edit-cell-modal');
             updateViews();
-        }
+            await saveUserData();
+        };
 
+        // Transaction forms & Filtering logic
         function populateCategorySelectors() {
             const selectTx = document.getElementById('tx-category');
             const selectFilter = document.getElementById('filter-category');
-            
             selectTx.innerHTML = '';
             selectFilter.innerHTML = '<option value="all">Todas as categorias</option>';
 
@@ -1354,9 +1565,8 @@
             });
         }
 
-        function handleNewTransaction(e) {
+        window.handleNewTransaction = async function(e) {
             e.preventDefault();
-            
             const type = document.querySelector('input[name="tx-type"]:checked').value;
             const catId = document.getElementById('tx-category').value;
             const date = document.getElementById('tx-date').value;
@@ -1364,7 +1574,7 @@
             const desc = document.getElementById('tx-desc').value;
 
             if (!date) return;
-            const monthKey = date.substring(0, 7); // "2026-05"
+            const monthKey = date.substring(0, 7);
 
             const newTx = {
                 id: Date.now().toString(),
@@ -1377,13 +1587,8 @@
             };
             transactions.unshift(newTx);
 
-            // Sum dynamically into live spreadsheet view
-            if (!monthlyData[catId]) {
-                monthlyData[catId] = {};
-            }
-            if (!monthlyData[catId][monthKey]) {
-                monthlyData[catId][monthKey] = 0;
-            }
+            if (!monthlyData[catId]) monthlyData[catId] = {};
+            if (!monthlyData[catId][monthKey]) monthlyData[catId][monthKey] = 0;
             monthlyData[catId][monthKey] += val;
 
             document.getElementById('transaction-form').reset();
@@ -1391,37 +1596,32 @@
             showAlert("Novo lançamento registrado e integrado!");
             
             updateViews();
-        }
+            await saveUserData();
+        };
 
-        function deleteTransaction(id) {
+        window.deleteTransaction = async function(id) {
             const index = transactions.findIndex(t => t.id === id);
             if (index !== -1) {
                 const tx = transactions[index];
-                
                 if (monthlyData[tx.catId] && monthlyData[tx.catId][tx.monthKey]) {
                     monthlyData[tx.catId][tx.monthKey] = Math.max(0, monthlyData[tx.catId][tx.monthKey] - tx.val);
                 }
-
                 transactions.splice(index, 1);
                 showAlert("Lançamento removido!", "warning");
                 updateViews();
+                await saveUserData();
             }
-        }
+        };
 
-        function filterTransactions() {
+        window.filterTransactions = function() {
             const type = document.getElementById('filter-type').value;
             const catId = document.getElementById('filter-category').value;
             const listBody = document.getElementById('transactions-table-body');
-            
             listBody.innerHTML = '';
             
             let filtered = [...transactions];
-            if (type !== 'all') {
-                filtered = filtered.filter(t => t.type === type);
-            }
-            if (catId !== 'all') {
-                filtered = filtered.filter(t => t.catId === catId);
-            }
+            if (type !== 'all') filtered = filtered.filter(t => t.type === type);
+            if (catId !== 'all') filtered = filtered.filter(t => t.catId === catId);
 
             document.getElementById('filtered-count').textContent = filtered.length;
 
@@ -1440,7 +1640,6 @@
                 const cat = categories.find(c => c.id === t.catId);
                 const tr = document.createElement('tr');
                 tr.className = "hover:bg-slate-50 transition-colors";
-                
                 const [year, month, day] = t.date.split('-');
                 const formattedDate = `${day}/${month}/${year}`;
 
@@ -1459,16 +1658,18 @@
                 `;
                 listBody.appendChild(tr);
             });
-        }
+        };
 
-        function resetData() {
+        window.resetData = async function() {
             monthlyData = JSON.parse(JSON.stringify(backupMonthlyData));
             budgets = JSON.parse(JSON.stringify(backupBudgets));
             transactions = [];
-            showAlert("Dados e orçamentos restaurados para o padrão original!");
+            showAlert("Dados e planejamentos restaurados para o padrão original!");
             updateViews();
-        }
+            await saveUserData();
+        };
 
+        // Chart Render Block
         function updateCharts() {
             const months = getSelectedMonthRange();
             const labels = months.map(m => {
@@ -1487,20 +1688,14 @@
             const avgExpenseVal = totalExpenseReal / Math.max(1, months.length);
             const savingsRate = avgIncomeVal > 0 ? ((avgIncomeVal - avgExpenseVal) / avgIncomeVal) : 0;
 
-            // Render KPI values
             const accEl = document.getElementById('kpi-accumulated-balance');
             accEl.textContent = "R$ " + formatCurrency(totalAccumulatedVal);
-            if (totalAccumulatedVal < 0) {
-                accEl.className = "text-2xl font-bold mt-1 text-rose-600";
-            } else {
-                accEl.className = "text-2xl font-bold mt-1 text-emerald-600";
-            }
+            accEl.className = totalAccumulatedVal < 0 ? "text-2xl font-bold mt-1 text-rose-600" : "text-2xl font-bold mt-1 text-emerald-600";
 
             document.getElementById('kpi-avg-income').textContent = "R$ " + formatCurrency(avgIncomeVal);
             document.getElementById('kpi-avg-expense').textContent = "R$ " + formatCurrency(avgExpenseVal);
-            document.getElementById('kpi-savings-rate').textContent = (savingsRate * 105).toFixed(1) + "%";
+            document.getElementById('kpi-savings-rate').textContent = (savingsRate * 100).toFixed(1) + "%";
 
-            // Calculate budget adherence rate
             let plannedIn = 0;
             let plannedOut = 0;
             months.forEach(m => {
@@ -1512,10 +1707,7 @@
             const adherence = totalPlanned > 0 ? Math.max(0, 100 - Math.abs((totalReal - totalPlanned) / totalPlanned * 100)) : 100;
             document.getElementById('budget-adherence').textContent = adherence.toFixed(1) + "% Alinhado";
 
-            // Chart 1: Evolution Incomes vs Expenses (Realized)
-            if (evolutionChart) {
-                evolutionChart.destroy();
-            }
+            if (evolutionChart) evolutionChart.destroy();
             const ctx1 = document.getElementById('evolutionChart').getContext('2d');
             evolutionChart = new Chart(ctx1, {
                 type: 'bar',
@@ -1541,33 +1733,24 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: { grid: { display: false } },
                         y: {
                             grid: { color: '#f1f5f9' },
-                            ticks: {
-                                callback: function(value) {
-                                    return 'R$ ' + value;
-                                }
-                            }
+                            ticks: { callback: value => 'R$ ' + value }
                         }
                     }
                 }
             });
 
-            // Chart 2: Category Breakdown (Realized)
             let catGroupNames = [];
             let catGroupSums = [];
 
             categories.forEach(cat => {
                 if (cat.parentId === "exp-total" || cat.id === "emprestimo" || cat.id === "ferias") {
                     let sum = 0;
-                    months.forEach(m => {
-                        sum += getCategorySum(cat.id, m);
-                    });
+                    months.forEach(m => sum += getCategorySum(cat.id, m));
                     if (sum > 0) {
                         catGroupNames.push(cat.name);
                         catGroupSums.push(sum);
@@ -1575,9 +1758,7 @@
                 }
             });
 
-            if (categoryChart) {
-                categoryChart.destroy();
-            }
+            if (categoryChart) categoryChart.destroy();
             const ctx2 = document.getElementById('categoryChart').getContext('2d');
             categoryChart = new Chart(ctx2, {
                 type: 'doughnut',
@@ -1585,9 +1766,7 @@
                     labels: catGroupNames,
                     datasets: [{
                         data: catGroupSums,
-                        backgroundColor: [
-                            '#f97316', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308', '#64748b'
-                        ],
+                        backgroundColor: ['#f97316', '#3b82f6', '#ec4899', '#8b5cf6', '#eab308', '#64748b'],
                         borderWidth: 2,
                         borderColor: '#ffffff'
                     }]
@@ -1609,20 +1788,46 @@
             });
         }
 
-        function updateViews() {
+        window.updateViews = function() {
             renderFluxoTable();
             renderPlanejamentoTable();
             filterTransactions();
             updateCharts();
-        }
-
-        window.onload = function() {
-            // Preset some transaction date for ease of use
-            document.getElementById('tx-date').value = "2026-05-15";
-
-            populateCategorySelectors();
-            updateViews();
         };
+
+        // System Launch
+        window.addEventListener('load', async () => {
+            document.getElementById('tx-date').value = "2026-05-15";
+            populateCategorySelectors();
+
+            if (firebaseEnabled) {
+                showLoginLoading(true);
+
+                // Prioritize Custom Token authentication if present (RULE 3)
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } catch(e) {
+                        console.warn("Custom token falhou, usando autenticação padrão.");
+                    }
+                }
+
+                // Auth status change trigger (RULE 3 Guarding)
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        await proceedToApp(user);
+                    } else {
+                        document.getElementById('login-container').classList.remove('hidden');
+                        document.getElementById('app-container').classList.add('hidden');
+                        showLoginLoading(false);
+                    }
+                });
+            } else {
+                // local fallback if offline
+                document.getElementById('login-container').classList.remove('hidden');
+                showLoginLoading(false);
+            }
+        });
     </script>
 </body>
 </html>
